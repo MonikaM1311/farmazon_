@@ -19,6 +19,7 @@ import UserDashboard from './pages/UserDashboard';
 import FarmerDashboard from './pages/FarmerDashboard';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import PaymentFailed from './pages/PaymentFailed';
 
 const ProtectedRoute = ({ children, role }) => {
   const { user } = useAuth();
@@ -42,6 +43,7 @@ const AppRoutes = () => (
         <Route path="/register" element={<Register />} />
         <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
         <Route path="/order-success/:id" element={<ProtectedRoute><OrderSuccess /></ProtectedRoute>} />
+        <Route path="/payment-failed/:id" element={<ProtectedRoute><PaymentFailed /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute role="consumer"><UserDashboard /></ProtectedRoute>} />
         <Route path="/farmer/dashboard" element={<ProtectedRoute role="farmer"><FarmerDashboard /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />

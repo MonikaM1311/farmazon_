@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import { PageLoader } from '../components/ui/Skeleton';
-import { FiPlus, FiEdit2, FiTrash2, FiPackage, FiX } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiPackage, FiX, FiUpload, FiLink, FiImage } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 const EMPTY_FORM = { name: '', description: '', price: '', category: 'vegetable', image: '', harvestDate: '', stock: '', unit: 'kg' };
@@ -20,6 +20,9 @@ export default function FarmerDashboard() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [imageMode, setImageMode] = useState('url'); // 'url' | 'upload'
+  const [imagePreview, setImagePreview] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -36,8 +39,36 @@ export default function FarmerDashboard() {
 
   const openEdit = (p) => {
     setForm({ name: p.name, description: p.description, price: p.price, category: p.category, image: p.image || '', harvestDate: p.harvestDate ? p.harvestDate.slice(0, 10) : '', stock: p.stock, unit: p.unit || 'kg' });
+    setImagePreview(p.image || '');
+    setImageMode('url');
     setEditId(p._id);
     setShowForm(true);
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) return toast.error('Image must be under 5MB');
+
+    // Show local preview immediately
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const base64 = ev.target.result;
+      setImagePreview(base64);
+      // Upload to Cloudinary
+      setUploading(true);
+      try {
+        const { data } = await api.post('/upload', { image: base64 });
+        setForm((f) => ({ ...f, image: data.url }));
+        toast.success('Image uploaded!');
+      } catch {
+        toast.error('Image upload failed');
+        setImagePreview('');
+      } finally {
+        setUploading(false);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e) => {
@@ -131,7 +162,7 @@ export default function FarmerDashboard() {
             <div>
               <div className="flex justify-between items-center mb-4">
                 <p className="text-gray-600 text-sm">{products.length} products listed</p>
-                <button onClick={() => { setShowForm(true); setEditId(null); setForm(EMPTY_FORM); }} className="btn-primary flex items-center gap-2 py-2 px-4 text-sm">
+                <button onClick={() => { setShowForm(true); setEditId(null); setForm(EMPTY_FORM); setImagePreview(''); setImageMode('url'); }} className="btn-primary flex items-center gap-2 py-2 px-4 text-sm">
                   <FiPlus /> Add Product
                 </button>
               </div>
@@ -158,10 +189,66 @@ export default function FarmerDashboard() {
                         <input className="input" placeholder="Unit (kg/piece)" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} />
                       </div>
                       <input type="date" className="input" value={form.harvestDate} onChange={(e) => setForm({ ...form, harvestDate: e.target.value })} />
-                      <input className="input" placeholder="Image URL (or leave blank)" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} />
+                      {/* Image Upload */}
+                      <div>
+                        <div className="flex gap-2 mb-2">
+                          <button type="button" onClick={() => setImageMode('url')} className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border transition-all ${imageMode === 'url' ? 'bg-green-800 text-white border-green-800' : 'border-gray-200 text-gray-500 hover:border-green-400'}`}>
+                            <FiLink size={11} /> URL
+                          </button>
+                          <button type="button" onClick={() => setImageMode('upload')} className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border transition-all ${imageMode === 'upload' ? 'bg-green-800 text-white border-green-800' : 'border-gray-200 text-gray-500 hover:border-green-400'}`}>
+                            <FiUpload size={11} /> Upload from device
+                          </button>
+                        </div>
+
+                        {imageMode === 'url' ? (
+                          <input
+                            className="input"
+                            placeholder="Paste image URL (optional)"
+                            value={form.image}
+                            onChange={(e) => { setForm({ ...form, image: e.target.value }); setImagePreview(e.target.value); }}
+                          />
+                        ) : (
+                          <label className={`flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
+                            uploading ? 'border-yellow-400 bg-yellow-50' : 'border-green-300 bg-green-50 hover:border-green-600 hover:bg-green-100'
+                          }`}>
+                            <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} disabled={uploading} />
+                            {uploading ? (
+                              <div className="flex flex-col items-center gap-1">
+                                <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                                <span className="text-xs text-green-700">Uploading...</span>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center gap-1 text-green-700">
+                                <FiUpload size={20} />
+                                <span className="text-xs font-medium">Click to select image</span>
+                                <span className="text-xs text-gray-400">JPG, PNG, WEBP — max 5MB</span>
+                              </div>
+                            )}
+                          </label>
+                        )}
+
+                        {/* Preview */}
+                        {(imagePreview || form.image) && (
+                          <div className="relative mt-2">
+                            <img
+                              src={imagePreview || form.image}
+                              alt="Preview"
+                              className="w-full h-32 object-cover rounded-xl border border-green-100"
+                              onError={(e) => { e.target.style.display = 'none'; }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => { setForm({ ...form, image: '' }); setImagePreview(''); }}
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                            >
+                              <FiX size={10} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                       <div className="flex gap-3 pt-2">
-                        <button type="button" onClick={() => setShowForm(false)} className="btn-outline flex-1">Cancel</button>
-                        <button type="submit" disabled={saving} className="btn-primary flex-1">{saving ? 'Saving...' : editId ? 'Update' : 'Add Product'}</button>
+                        <button type="button" onClick={() => { setShowForm(false); setImagePreview(''); }} className="btn-outline flex-1">Cancel</button>
+                        <button type="submit" disabled={saving || uploading} className="btn-primary flex-1">{saving ? 'Saving...' : editId ? 'Update' : 'Add Product'}</button>
                       </div>
                     </form>
                   </div>
