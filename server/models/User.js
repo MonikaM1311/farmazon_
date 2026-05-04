@@ -5,9 +5,20 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true },
   password: { type: String, required: true, minlength: 6 },
-  role: { type: String, enum: ['consumer', 'farmer'], default: 'consumer' },
+  role: { type: String, enum: ['consumer', 'farmer', 'admin'], default: 'consumer' },
   address: { type: String, default: '' },
   phone: { type: String, default: '' },
+  wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+  referralCode: { type: String, unique: true, sparse: true },
+  referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  referralCredits: { type: Number, default: 0 },
+  isVerified: { type: Boolean, default: false }, // farmer verification badge
+  bio: { type: String, default: '' },
+  location: { type: String, default: '' },
+  coordinates: {
+    lat: { type: Number, default: null },
+    lng: { type: Number, default: null },
+  },
 }, { timestamps: true });
 
 userSchema.pre('save', async function (next) {

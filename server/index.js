@@ -10,6 +10,11 @@ const orderRoutes = require('./routes/orderRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+const couponRoutes = require('./routes/couponRoutes');
+const wishlistRoutes = require('./routes/wishlistRoutes');
+const farmerRoutes = require('./routes/farmerRoutes');
+const comboRoutes = require('./routes/comboRoutes');
 
 const app = express();
 
@@ -24,6 +29,11 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/coupons', couponRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/farmers', farmerRoutes);
+app.use('/api/combos', comboRoutes);
 
 app.get('/', (req, res) => res.json({ message: 'Farmazon API running' }));
 

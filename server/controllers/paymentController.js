@@ -2,7 +2,7 @@ const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const Order = require('../models/Order');
 
-const razorpay = new Razorpay({
+const getRazorpay = () => new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
@@ -13,7 +13,7 @@ const createRazorpayOrder = async (req, res) => {
   if (!products?.length) return res.status(400).json({ message: 'No products in order' });
 
   // Create Razorpay order (amount in paise)
-  const rzpOrder = await razorpay.orders.create({
+  const rzpOrder = await getRazorpay().orders.create({
     amount: Math.round(totalPrice * 100),
     currency: 'INR',
     receipt: `rcpt_${Date.now()}`,

@@ -20,6 +20,7 @@ import FarmerDashboard from './pages/FarmerDashboard';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import PaymentFailed from './pages/PaymentFailed';
+import FarmerProfile from './pages/FarmerProfile';
 
 const ProtectedRoute = ({ children, role }) => {
   const { user } = useAuth();
@@ -46,6 +47,7 @@ const AppRoutes = () => (
         <Route path="/payment-failed/:id" element={<ProtectedRoute><PaymentFailed /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute role="consumer"><UserDashboard /></ProtectedRoute>} />
         <Route path="/farmer/dashboard" element={<ProtectedRoute role="farmer"><FarmerDashboard /></ProtectedRoute>} />
+        <Route path="/farmer/:id" element={<FarmerProfile />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </main>

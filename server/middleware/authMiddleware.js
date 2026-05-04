@@ -24,4 +24,18 @@ const farmerOnly = (req, res, next) => {
   next();
 };
 
-module.exports = { protect, farmerOnly };
+const adminOnly = (req, res, next) => {
+  if (req.user?.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access only' });
+  }
+  next();
+};
+
+const consumerOnly = (req, res, next) => {
+  if (req.user?.role !== 'consumer') {
+    return res.status(403).json({ message: 'Consumers only' });
+  }
+  next();
+};
+
+module.exports = { protect, farmerOnly, adminOnly, consumerOnly };

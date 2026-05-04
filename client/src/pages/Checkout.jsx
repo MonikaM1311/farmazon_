@@ -4,7 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
-import { FiMapPin, FiCreditCard, FiShield, FiTruck } from 'react-icons/fi';
+import { FiMapPin, FiCreditCard, FiShield, FiTruck, FiTag, FiX } from 'react-icons/fi';
 
 const PAYMENT_OPTIONS = [
   { value: 'COD',      label: 'Cash on Delivery', icon: '💵', desc: 'Pay when your order arrives' },
@@ -31,6 +31,12 @@ export default function Checkout() {
   const [address, setAddress] = useState(user?.address || '');
   const [payment, setPayment] = useState('COD');
   const [loading, setLoading] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [coupon, setCoupon] = useState(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+
+  const discount = coupon ? Number(((total * coupon.discount) / 100).toFixed(2)) : 0;
+  const finalTotal = total - discount;
 
   const cartProducts = cart.map((i) => ({
     productId: i._id,
@@ -40,13 +46,29 @@ export default function Checkout() {
     image: i.image || '',
   }));
 
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    try {
+      const { data } = await api.post('/coupons/validate', { code: couponCode, total });
+      setCoupon(data);
+      toast.success(`🎉 Coupon applied! ${data.discount}% off`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Invalid coupon');
+      setCoupon(null);
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
   // COD flow — direct order creation
   const handleCOD = async () => {
     const { data } = await api.post('/payment/cod', {
       products: cartProducts,
       deliveryAddress: address,
-      totalPrice: total,
+      totalPrice: finalTotal,
     });
+    if (coupon) await api.post('/coupons/apply', { code: coupon.code });
     clearCart();
     navigate(`/order-success/${data._id}`);
   };
@@ -63,7 +85,7 @@ export default function Checkout() {
     const { data } = await api.post('/payment/create-order', {
       products: cartProducts,
       deliveryAddress: address,
-      totalPrice: total,
+      totalPrice: finalTotal,
     });
 
     const options = {
@@ -164,6 +186,33 @@ export default function Checkout() {
             </p>
           </div>
 
+          {/* Coupon Code */}
+          <div className="card p-6 border border-green-100">
+            <h2 className="font-bold text-green-900 mb-4 flex items-center gap-2">
+              <FiTag className="text-yellow-500" /> Promo Code
+            </h2>
+            {coupon ? (
+              <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                <span className="text-green-800 font-semibold text-sm">🎉 {coupon.code} — {coupon.discount}% off applied!</span>
+                <button onClick={() => { setCoupon(null); setCouponCode(''); }} className="text-gray-400 hover:text-red-500"><FiX size={16} /></button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  className="input flex-1"
+                  placeholder="Enter promo code (e.g. FRESH10)"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => e.key === 'Enter' && applyCoupon()}
+                />
+                <button onClick={applyCoupon} disabled={couponLoading} className="btn-primary py-2 px-4 text-sm whitespace-nowrap">
+                  {couponLoading ? '...' : 'Apply'}
+                </button>
+              </div>
+            )}
+            <p className="text-xs text-gray-400 mt-2">Try: FRESH10, FARM20, WELCOME15</p>
+          </div>
+
           {/* Payment Method */}
           <div className="card p-6 border border-green-100">
             <h2 className="font-bold text-green-900 mb-4 flex items-center gap-2">
@@ -224,9 +273,9 @@ export default function Checkout() {
                 Processing...
               </>
             ) : payment === 'COD' ? (
-              `Place Order — ₹${total.toFixed(2)}`
+              `Place Order — ₹${finalTotal.toFixed(2)}`
             ) : (
-              `Pay ₹${total.toFixed(2)} Securely`
+              `Pay ₹${finalTotal.toFixed(2)} Securely`
             )}
           </button>
         </form>
@@ -247,17 +296,17 @@ export default function Checkout() {
               <div className="flex justify-between text-gray-500">
                 <span>Subtotal</span><span>₹{total.toFixed(2)}</span>
               </div>
+              {coupon && (
+                <div className="flex justify-between text-green-600 font-medium">
+                  <span>Discount ({coupon.discount}%)</span><span>-₹{discount.toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-gray-500">
                 <span>Delivery</span><span className="text-green-600 font-medium">FREE</span>
               </div>
-              {payment !== 'COD' && (
-                <div className="flex justify-between text-gray-500">
-                  <span>Payment charges</span><span className="text-green-600 font-medium">₹0</span>
-                </div>
-              )}
               <div className="flex justify-between font-bold text-gray-800 text-base pt-1 border-t border-green-100">
                 <span>Total</span>
-                <span className="text-green-800">₹{total.toFixed(2)}</span>
+                <span className="text-green-800">₹{finalTotal.toFixed(2)}</span>
               </div>
             </div>
           </div>

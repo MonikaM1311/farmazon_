@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
-import { FiShoppingCart, FiMenu, FiX, FiUser, FiLogOut } from 'react-icons/fi';
+import { FiShoppingCart, FiMenu, FiX, FiUser, FiLogOut, FiHeart, FiPackage } from 'react-icons/fi';
 import { GiWheat } from 'react-icons/gi';
 
 export default function Navbar() {
@@ -46,8 +46,34 @@ export default function Navbar() {
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-3">
-          <Link to="/cart" className="relative p-2 hover:bg-green-800 rounded-xl transition-colors">
+        <div className="flex items-center gap-1">
+
+          {/* My Orders — consumers only */}
+          {user?.role === 'consumer' && (
+            <Link
+              to="/dashboard"
+              className="hidden sm:flex items-center gap-1.5 p-2 hover:bg-green-800 rounded-xl transition-colors group"
+              title="My Orders"
+            >
+              <FiPackage className="text-lg text-green-100 group-hover:text-yellow-400 transition-colors" />
+            </Link>
+          )}
+
+          {/* Wishlist — consumers only */}
+          {user?.role === 'consumer' && (
+            <Link
+              to="/dashboard"
+              onClick={() => {}}
+              className="hidden sm:flex items-center gap-1.5 p-2 hover:bg-green-800 rounded-xl transition-colors group"
+              title="Wishlist"
+              state={{ tab: 'wishlist' }}
+            >
+              <FiHeart className="text-lg text-green-100 group-hover:text-red-400 transition-colors" />
+            </Link>
+          )}
+
+          {/* Cart */}
+          <Link to="/cart" className="relative p-2 hover:bg-green-800 rounded-xl transition-colors ml-1">
             <FiShoppingCart className="text-xl text-green-100" />
             {count > 0 && (
               <span className="absolute -top-1 -right-1 bg-yellow-500 text-green-900 text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
@@ -56,17 +82,24 @@ export default function Navbar() {
             )}
           </Link>
 
+          {/* Profile / Auth */}
           {user ? (
-            <div className="relative">
+            <div className="relative ml-1">
               <button
                 onClick={() => setDropOpen(!dropOpen)}
                 className="flex items-center gap-2 bg-green-800 hover:bg-green-700 px-3 py-2 rounded-xl transition-colors"
               >
-                <FiUser className="text-yellow-400" />
+                <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-green-900 font-bold text-xs">
+                  {user.name?.[0]?.toUpperCase()}
+                </div>
                 <span className="text-sm font-medium text-yellow-300 hidden sm:block">{user.name.split(' ')[0]}</span>
               </button>
               {dropOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
+                <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
+                  <div className="px-4 py-2 border-b border-gray-100">
+                    <p className="text-sm font-semibold text-gray-800">{user.name}</p>
+                    <p className="text-xs text-gray-400">{user.email}</p>
+                  </div>
                   <Link
                     to={user.role === 'farmer' ? '/farmer/dashboard' : '/dashboard'}
                     className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-green-50"
@@ -74,6 +107,26 @@ export default function Navbar() {
                   >
                     <FiUser size={14} /> Dashboard
                   </Link>
+                  {user.role === 'consumer' && (
+                    <>
+                      <Link
+                        to="/dashboard"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-green-50"
+                        onClick={() => setDropOpen(false)}
+                      >
+                        <FiPackage size={14} /> My Orders
+                      </Link>
+                      <Link
+                        to="/dashboard"
+                        state={{ tab: 'wishlist' }}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-green-50"
+                        onClick={() => setDropOpen(false)}
+                      >
+                        <FiHeart size={14} /> Wishlist
+                      </Link>
+                    </>
+                  )}
+                  <div className="border-t border-gray-100 mt-1" />
                   <button
                     onClick={handleLogout}
                     className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-500 hover:bg-red-50"
@@ -84,7 +137,7 @@ export default function Navbar() {
               )}
             </div>
           ) : (
-            <Link to="/login" className="btn-primary text-sm py-2 px-4">Login</Link>
+            <Link to="/login" className="btn-primary text-sm py-2 px-4 ml-1">Login</Link>
           )}
 
           <button className="md:hidden p-2 text-green-100" onClick={() => setOpen(!open)}>
