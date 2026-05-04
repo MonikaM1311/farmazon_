@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (formData) => {
-    const { data } = await api.post('/api/auth/register', formData);
+    const { data } = await api.post('/auth/register', formData);
     localStorage.setItem('farmazon_user', JSON.stringify(data));
     setUser(data);
     return data;
